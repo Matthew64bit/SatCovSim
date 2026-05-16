@@ -1,0 +1,18 @@
+# MATLAB metadata and caches
+.matlab/
+ConversionDocs/
+html/
+
+# Simulink generation folders
+slprj/
+*_ert_rtw/
+*_sl/
+
+# Autosave and crash dumps
+*.asv
+*.m~
+*.mat
+
+# Data files
+*.csv
+*.tle
