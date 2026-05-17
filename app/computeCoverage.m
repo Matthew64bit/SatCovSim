@@ -1,4 +1,4 @@
-function [maxVisibleSats, isValid] = computeCoverage(groundPoints, f, sats, sc, loadBar)
+function [maxVisibleSats, isValid] = computeCoverage(groundPoints, f, sats, sc, loadBar, weather, interpolated)
     %% Initial phase
     % Create thread pool for async compute
     batch_size = ceil(length(sats)/6);
@@ -16,8 +16,7 @@ function [maxVisibleSats, isValid] = computeCoverage(groundPoints, f, sats, sc, 
     end
         
     
-    
-    loadBar.Value = "20%";
+    clear batch_size;
     %% Data initialization
     % Enable autosimulate for vectorization
     sc.AutoSimulate = true;
@@ -28,8 +27,6 @@ function [maxVisibleSats, isValid] = computeCoverage(groundPoints, f, sats, sc, 
     % Minute pos for a 1 minute time resolution
     minute_pos = zeros(dummy_pos_size(1), dummy_pos_size(2), length(sats), "single");
     clear dummy_pos_size;
-    
-    loadBar.Value = "40%";
     %% Computing
     % Distribute data to workers
     for i = 1:length(F)
@@ -42,17 +39,34 @@ function [maxVisibleSats, isValid] = computeCoverage(groundPoints, f, sats, sc, 
         minute_pos(:, :, par_idx(idx) : par_idx(idx+1)) = single(out);
         fprintf("Done %d%%\n", (i/length(F))*100);
     end
+    
+    clear sats;
 
-    loadBar.Value = "60%";
+    %% OPTIONAL imterpolation block
+     if interpolated
+        org_timeframe = sc.StartTime:seconds(sc.SampleTime):sc.StopTime;
+        interp_timeframe = sc.StartTime:seconds(4):sc.StopTime;
+        
+        minute_pos_size = size(minute_pos);
+        seconds_pos = zeros(minute_pos_size(1), length(interp_timeframe), minute_pos_size(3));
+        
+        clear minute_pos_size
+        
+        for i = 1:length(minute_pos)
+            seconds_pos(1, :, i) = interp1(org_timeframe, minute_pos(1, :, i), interp_timeframe, "makima");
+            seconds_pos(2, :, i) = interp1(org_timeframe, minute_pos(2, :, i), interp_timeframe, "makima");
+            seconds_pos(3, :, i) = interp1(org_timeframe, minute_pos(3, :, i), interp_timeframe, "makima");
+        end
+        minute_pos = seconds_pos;
+        clear seconds_pos org_timeframe interp_timeframe;
+     end
     %% Data initialization for collecting results
     minute_pos_size = size(minute_pos);
     maxVisibleSats = zeros(length(groundPoints), minute_pos_size(2), "uint8");
-    isValid = zeros(minute_pos_size(2), minute_pos_size(3), length(validPoints), "uint8");
-
-    loadBar.Value = "80%";
+    isValid = zeros(minute_pos_size(2), minute_pos_size(3), length(groundPoints), "uint8");
     %% Get satellite visible at a moment in time
     for i = 1:length(par_idx) - 1
-        F(i) = parfeval(pool, @getMaxVizSat, 2, minute_pos(:, :, par_idx(i) : par_idx(i+1)), groundPoints, f);
+        F(i) = parfeval(pool, @getMaxVizSat, 2, minute_pos(:, :, par_idx(i) : par_idx(i+1)), groundPoints, f, weather);
     end
     
     for i = 1:length(F)

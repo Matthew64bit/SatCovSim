@@ -1,5 +1,5 @@
-function [visibleSats, isVisible] = getMaxVizSat(pos, validPoints, f)
-    [d, Pr] = computeMaxDist(pos(3, :, :)/1000, f);
+function [visibleSats, isVisible] = getMaxVizSat(pos, validPoints, f, weather)
+    [d, Pr] = computeMaxDist(pos(3, :, :)/1000, f, weather);
     maxViewDistance = d;
     distToCompare = haversine(pos, validPoints); %% TimePoints x Satellites x GroundPoints
     

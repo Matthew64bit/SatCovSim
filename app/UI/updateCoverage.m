@@ -9,7 +9,7 @@ function updateCoverage(app)
 
     % Display mean
     app.MeanSatellitesTextArea.Value = string(app.MeanNumOfSats(app.CurrIdx));
-
-    displayHeatmap(app.MaxVisibleSats, app.GroundPoints, app.CurrIdx, app.UIAxes);
+    
+    displayHeatmap(app.MaxVisibleSats, app.GroundPoints, app.CurrIdx, app.UIAxes, "turbo");
     app.DateandTimeTextArea.Value = string(app.CurrTime);
 end

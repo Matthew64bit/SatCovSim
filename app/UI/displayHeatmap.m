@@ -1,4 +1,4 @@
-function displayHeatmap(maxVisibleSats, groundPoints, timeStep, figDisplay)
+function displayHeatmap(maxVisibleSats, groundPoints, timeStep, figDisplay, gcolor)
     x = groundPoints(:, 2);
     y = groundPoints(:, 1);
     z = maxVisibleSats(:, timeStep);
@@ -7,7 +7,7 @@ function displayHeatmap(maxVisibleSats, groundPoints, timeStep, figDisplay)
         disp("No vizible satellites");
     else
         scatter(figDisplay, x, y, 20, z, 'filled'); 
-        colormap(figDisplay,"turbo") ; 
+        colormap(figDisplay, gcolor) ; 
         colorbar(figDisplay);
     end
 end

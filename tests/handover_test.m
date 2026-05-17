@@ -17,16 +17,21 @@ borders = single(getCountryBorders("Romania"));
 A = [max(borders(:, 1)), min(borders(:, 2))];
 C = [min(borders(:, 1)), max(borders(:, 2))];
 
-myArea = devideArea(A, C, 6);
+myArea = single(devideArea(A, C, 6));
 validPoints = single(computeValidPoints(borders, myArea));
+
+lat_rez = (A(1) - C(1)) / 2^6;
+long_rez = (C(2) - A(2)) / 2^6;
+
+lat_rez_km = haversine(A, [C(1), A(2)]) / 2^6;
+long_rez_km = haversine(A, [A(1), C(2)]) / 2^6;
 
 clear A C borders myArea; 
 
 %% Load satellites
 
+getSatData(opName);
 sats = loadAllSatData(opName, sc);
-
-disp("Satellites loaded successfully!");
 
 %% Create thread pool for async compute
 
@@ -66,31 +71,28 @@ end
 clear sats;
 
 %% Create variables for computation
-seconds_pos = minute_pos;
-
-
-seconds_pos_size = size(seconds_pos);
-maxVisibleSats = zeros(length(validPoints), seconds_pos_size(2), "uint8");
-isValid = zeros(seconds_pos_size(2), seconds_pos_size(3), length(validPoints), "uint8");
-
-clear minute_pos;
-
-
+    minute_pos_size = size(minute_pos);
+    maxVisibleSats = zeros(length(validPoints), minute_pos_size(2), "uint8");
+    isVisible = zeros(minute_pos_size(2), minute_pos_size(3), length(validPoints), "uint8");
 %% Compute max visible satellites
 for i = 1:length(par_idx) - 1
-    F(i) = parfeval(pool, @getMaxVizSat, 2, seconds_pos(:, :, par_idx(i) : par_idx(i+1)), validPoints, 21);
+    F(i) = parfeval(pool, @getMaxVizSat, 2, minute_pos(:, :, par_idx(i) : par_idx(i+1)), validPoints, 21, "rain");
 end
 
 for i = 1:length(F)
     [idx, out1, out2] = fetchNext(F);
     fprintf("Done %d%%\n", (i/length(F))*100);
     maxVisibleSats = maxVisibleSats + out1;
-    isValid(:, par_idx(idx):par_idx(idx+1), :) = uint8(out2);
+    isVisible(:, par_idx(idx):par_idx(idx+1), :) = uint8(out2);
 end
 
-isValid = permute(isValid, [2 1 3]);
+isVisible = permute(isVisible, [2 1 3]);
 %%
-handovers = computeHandoverProbability(isValid);
+% from 2nd time stamp to the n-2 time stamp
+% 1 prev + 2 future
+tic
+linkStatus = computeLinkStatus(isVisible)';
+toc
 
 % 1 - handover happens
 % 2 - staying connect (aka no handover)
@@ -101,12 +103,12 @@ handovers = computeHandoverProbability(isValid);
 
 x = validPoints(:, 2);
 y = validPoints(:, 1);
-z = handovers(3, :);
+z = maxVisibleSats(:, 9);
 
 if max(z) == 0
     disp("No vizible satellites");
 else
     s = scatter(x,y,20, z, "filled");
-    colormap turbo
+    colormap parula
     colorbar
 end

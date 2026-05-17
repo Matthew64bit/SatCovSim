@@ -1,10 +1,16 @@
-function [d, Pr] = computeMaxDist(h, f)
+function [d, Pr] = computeMaxDist(h, f, weather)
     alfa = linspace(pi/2 - deg2rad(20), pi/2 + deg2rad(20), 100);
     
     d =h./sin(alfa)';
     L = computeLoss(d, f);
-    Pr = 85-L;
-
+    switch weather
+        case "clear"
+            Pr = 85-L-3;
+        case "rain"
+            Pr = 85-L-12;
+        case "storm"
+            Pr = 85-L-20;
+    end
     usable = Pr >= -110;              
     d_masked  = d;
     d_masked(~usable) = -Inf;

@@ -1,10 +1,10 @@
-function handoverTotal = computeHandoverProbability(isValid)
+function handoverTotal = computeLinkStatus(isValid)
     isValid_size = size(isValid);
     handoverTotal = zeros(isValid_size(2) - 3, isValid_size(3), "uint8");
 
     % Page is the ground point aka de the 3rd dimension
-    for i = 1:isValid_size(2) - 3
-        currentWindow = squeeze(binary2decimal(isValid(:, i:i+3, :)));
+    for i = 2:isValid_size(2) - 2
+        currentWindow = squeeze(binary2decimal(isValid(:, i-1:i+2, :)));
         mask_7 = currentWindow == 7;
         mask_14 = currentWindow == 14;
         mask_15 = currentWindow == 15;
