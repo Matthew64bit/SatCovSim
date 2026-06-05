@@ -40,15 +40,17 @@ def tlewrite(satellites, opName):
 def main(opname):
     satellites = tleread(opname)
 
-    visAngle = 20
-    maxLat = 48.183 + visAngle
-    minLat = 43.9372 - visAngle
+    if opname == "starlink":
+        visAngle = 10
+        minLat = 43.9372 - visAngle
+    else:
+        minLat = 0
 
     usable_satellites = []
 
     for idx, sat in enumerate(satellites):
         inclination = float(sat["tle_line_2"].split()[2])
-        if maxLat >= inclination >= minLat:
+        if inclination >= minLat:
             usable_satellites.append(sat)
 
     tlewrite(usable_satellites, opname)

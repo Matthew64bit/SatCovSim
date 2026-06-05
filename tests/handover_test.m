@@ -17,7 +17,7 @@ borders = single(getCountryBorders("Romania"));
 A = [max(borders(:, 1)), min(borders(:, 2))];
 C = [min(borders(:, 1)), max(borders(:, 2))];
 
-myArea = single(devideArea(A, C, 6));
+myArea = single(devideArea(A, C, 7));
 validPoints = single(computeValidPoints(borders, myArea));
 
 lat_rez = (A(1) - C(1)) / 2^6;
@@ -42,7 +42,7 @@ if par_idx(end) ~= length(sats)
 end
 
 F(length(par_idx) - 1) = parallel.Future;
-pool = parpool("Processes");
+pool = parpool("Processes", 4);
 
 clear batch_size;
 %% Pos vector creation interlude
@@ -72,7 +72,7 @@ clear sats;
 
 %% Create variables for computation
     minute_pos_size = size(minute_pos);
-    maxVisibleSats = zeros(length(validPoints), minute_pos_size(2), "uint8");
+    maxVisibleSats = zeros(length(validPoints), minute_pos_size(2), "single");
     isVisible = zeros(minute_pos_size(2), minute_pos_size(3), length(validPoints), "uint8");
 %% Compute max visible satellites
 for i = 1:length(par_idx) - 1
@@ -82,10 +82,11 @@ end
 for i = 1:length(F)
     [idx, out1, out2] = fetchNext(F);
     fprintf("Done %d%%\n", (i/length(F))*100);
-    maxVisibleSats = maxVisibleSats + out1;
+    maxVisibleSats = maxVisibleSats + single(out1);
     isVisible(:, par_idx(idx):par_idx(idx+1), :) = uint8(out2);
 end
 
+maxVisibleSats = single(maxVisibleSats./length(minute_pos));
 isVisible = permute(isVisible, [2 1 3]);
 %%
 % from 2nd time stamp to the n-2 time stamp
@@ -103,12 +104,15 @@ toc
 
 x = validPoints(:, 2);
 y = validPoints(:, 1);
-z = maxVisibleSats(:, 9);
+z = maxVisibleSats(:, 100);
 
 if max(z) == 0
     disp("No vizible satellites");
 else
     s = scatter(x,y,20, z, "filled");
-    colormap parula
+    colormap turbo
     colorbar
 end
+
+%%
+getMaxVizSat(seconds_pos(:,:, 1:5), validPoints, 21, "clear");

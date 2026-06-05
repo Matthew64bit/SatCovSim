@@ -1,6 +1,6 @@
 function [maxVisibleSats, isValid] = computeCoverage(groundPoints, f, sats, sc, loadBar, weather, interpolated)
     %% Initial phase
-    % Create thread pool for async compute
+    % Create parallel pool for async compute
     batch_size = ceil(length(sats)/6);
     par_idx = uint16(1:batch_size:length(sats));
 
@@ -10,7 +10,7 @@ function [maxVisibleSats, isValid] = computeCoverage(groundPoints, f, sats, sc, 
     
     F(length(par_idx) - 1) = parallel.Future;
     if isempty(gcp("nocreate"))
-        pool = parpool("Processes");
+        pool = parpool("Processes", 4);
     else
         pool = gcp();
     end
@@ -45,7 +45,7 @@ function [maxVisibleSats, isValid] = computeCoverage(groundPoints, f, sats, sc, 
     %% OPTIONAL imterpolation block
      if interpolated
         org_timeframe = sc.StartTime:seconds(sc.SampleTime):sc.StopTime;
-        interp_timeframe = sc.StartTime:seconds(4):sc.StopTime;
+        interp_timeframe = sc.StartTime:seconds(3):sc.StopTime;
         
         minute_pos_size = size(minute_pos);
         seconds_pos = zeros(minute_pos_size(1), length(interp_timeframe), minute_pos_size(3));
@@ -57,12 +57,12 @@ function [maxVisibleSats, isValid] = computeCoverage(groundPoints, f, sats, sc, 
             seconds_pos(2, :, i) = interp1(org_timeframe, minute_pos(2, :, i), interp_timeframe, "makima");
             seconds_pos(3, :, i) = interp1(org_timeframe, minute_pos(3, :, i), interp_timeframe, "makima");
         end
-        minute_pos = seconds_pos;
+        minute_pos = seconds_pos(:, 1:100, :);
         clear seconds_pos org_timeframe interp_timeframe;
      end
     %% Data initialization for collecting results
     minute_pos_size = size(minute_pos);
-    maxVisibleSats = zeros(length(groundPoints), minute_pos_size(2), "uint8");
+    maxVisibleSats = zeros(length(groundPoints), minute_pos_size(2), "uint16");
     isValid = zeros(minute_pos_size(2), minute_pos_size(3), length(groundPoints), "uint8");
     %% Get satellite visible at a moment in time
     for i = 1:length(par_idx) - 1

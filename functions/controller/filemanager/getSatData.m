@@ -7,7 +7,7 @@ function getSatData(name)
         if isfile(filepath)
             age = getFileAge(filepath);
             if age < "24:00:00"
-                pyrunfile("D:\ETTI\Anul_4\Licenta\SatCovSim\py_file_handler\main.py" + " " + "'" + name + "'");
+                pyrunfile(pwd + "\py_file_handler\main.py" + " " + "'" + name + "'");
                 return
             end
         end
@@ -26,7 +26,7 @@ function getSatData(name)
         fprintf(fileID, '%s', data);
         fclose(fileID);
 
-        pyrunfile("D:\ETTI\Anul_4\Licenta\SatCovSim\py_file_handler\main.py" + " " + "'" + name + "'");
+        pyrunfile(pwd + "\py_file_handler\main.py" + " " + "'" + name + "'");
     catch ME
         logger(ME.message, mfilename);
     end
