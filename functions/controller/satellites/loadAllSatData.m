@@ -3,5 +3,5 @@ function sats = loadAllSatData(opName, scenario)
     opName = opName + "_trimmed";
     FILENAME = "%s.tle";
     filepath = pwd + "\data\" + sprintf(FILENAME, opName);
-    sats = satellite(scenario, filepath, "OrbitPropagator","sgp4");
+    sats = satellite(scenario, filepath);
 end

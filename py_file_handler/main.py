@@ -12,7 +12,7 @@ def tleread(opName):
         line2 = f.readline()
         line3 = f.readline()
 
-        while line1  and line2  and line3:
+        while line1 and line2 and line3:
             satellites.append({
                 'name': line1.strip(),
                 'tle_line_1': line2.strip(),
@@ -50,7 +50,8 @@ def main(opname):
 
     for idx, sat in enumerate(satellites):
         inclination = float(sat["tle_line_2"].split()[2])
-        if inclination >= minLat:
+        second_time_derivative = float(sat["tle_line_1"].split()[5][0]);
+        if inclination >= minLat and second_time_derivative == 0:
             usable_satellites.append(sat)
 
     tlewrite(usable_satellites, opname)

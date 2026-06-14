@@ -57,7 +57,7 @@ function [maxVisibleSats, isValid] = computeCoverage(groundPoints, f, sats, sc, 
             seconds_pos(2, :, i) = interp1(org_timeframe, minute_pos(2, :, i), interp_timeframe, "makima");
             seconds_pos(3, :, i) = interp1(org_timeframe, minute_pos(3, :, i), interp_timeframe, "makima");
         end
-        minute_pos = seconds_pos(:, 1:100, :);
+        minute_pos = seconds_pos(:, 1:50, :);
         clear seconds_pos org_timeframe interp_timeframe;
      end
     %% Data initialization for collecting results

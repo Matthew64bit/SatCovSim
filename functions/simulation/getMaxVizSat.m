@@ -8,7 +8,7 @@ function [visibleSats, isVisible] = getMaxVizSat(pos, validPoints, f, weather)
     clear c1 c2;
     
     isVisible = distToCompare <= maxViewDistance; %% Return here for handover
-    visibleSats = uint16(sum(isVisible, 2));
+    visibleSats = uint8(sum(isVisible, 2));
     visibleSats = squeeze(visibleSats);
     
     visibleSats_permuted = permute(visibleSats, [2, 1]);

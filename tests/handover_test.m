@@ -8,6 +8,8 @@ opName = "starlink";
 %% Start scenario
 
 sc = satelliteScenario("AutoSimulate", false);
+sc.StartTime = datetime("now");
+sc.StopTime = datetime("now") + minutes(90);
 
 disp("Satellite scenario created successfully!");
 
@@ -17,14 +19,14 @@ borders = single(getCountryBorders("Romania"));
 A = [max(borders(:, 1)), min(borders(:, 2))];
 C = [min(borders(:, 1)), max(borders(:, 2))];
 
-myArea = single(devideArea(A, C, 7));
+myArea = single(devideArea(A, C, 6));
 validPoints = single(computeValidPoints(borders, myArea));
 
-lat_rez = (A(1) - C(1)) / 2^6;
-long_rez = (C(2) - A(2)) / 2^6;
+%lat_rez = (A(1) - C(1)) / 2^6;
+%long_rez = (C(2) - A(2)) / 2^6;
 
-lat_rez_km = haversine(A, [C(1), A(2)]) / 2^6;
-long_rez_km = haversine(A, [A(1), C(2)]) / 2^6;
+%lat_rez_km = haversine(A, [C(1), A(2)]) / 2^6;
+%long_rez_km = haversine(A, [A(1), C(2)]) / 2^6;
 
 clear A C borders myArea; 
 
@@ -72,19 +74,22 @@ clear sats;
 
 %% Create variables for computation
     minute_pos_size = size(minute_pos);
-    maxVisibleSats = zeros(length(validPoints), minute_pos_size(2), "single");
+    maxVisibleSats = zeros(length(validPoints), minute_pos_size(2), "uint16");
     isVisible = zeros(minute_pos_size(2), minute_pos_size(3), length(validPoints), "uint8");
 %% Compute max visible satellites
-for i = 1:length(par_idx) - 1
-    F(i) = parfeval(pool, @getMaxVizSat, 2, minute_pos(:, :, par_idx(i) : par_idx(i+1)), validPoints, 21, "rain");
-end
 
+for i = 1:length(par_idx) - 1
+    F(i) = parfeval(pool, @getMaxVizSat, 2, gpuArray(minute_pos(:, :, par_idx(i) : par_idx(i+1))), gpuArray(validPoints), 21, "clear");
+end
+ 
+tic
 for i = 1:length(F)
     [idx, out1, out2] = fetchNext(F);
     fprintf("Done %d%%\n", (i/length(F))*100);
-    maxVisibleSats = maxVisibleSats + single(out1);
-    isVisible(:, par_idx(idx):par_idx(idx+1), :) = uint8(out2);
+    maxVisibleSats = maxVisibleSats + gather(out1);
+    isVisible(:, par_idx(idx):par_idx(idx+1), :) = uint8(gather(out2));
 end
+toc
 
 maxVisibleSats = single(maxVisibleSats./length(minute_pos));
 isVisible = permute(isVisible, [2 1 3]);
@@ -116,3 +121,28 @@ end
 
 %%
 getMaxVizSat(seconds_pos(:,:, 1:5), validPoints, 21, "clear");
+
+%% serial gpu
+tic
+for i = 1:length(par_idx) - 1
+    [out1, out2] = getMaxVizSat(gpuArray(minute_pos(:, :, par_idx(i) : par_idx(i+1))), gpuArray(validPoints), 21, "clear");
+    maxVisibleSats = maxVisibleSats + gather(out1);
+    isVisible(:, par_idx(i):par_idx(i+1), :) = uint8(gather(out2));
+end
+toc
+%% serial cpu
+tic
+for i = 1:length(par_idx) - 1
+    [out1, out2] = getMaxVizSat(minute_pos(:, :, par_idx(i) : par_idx(i+1)), validPoints, 21, "clear");
+    maxVisibleSats = maxVisibleSats + out1;
+    isVisible(:, par_idx(i):par_idx(i+1), :) = uint8(out2);
+end
+toc
+%%
+clear F
+batch_size = ceil(length(minute_pos)/100);
+par_idx = uint16(1:batch_size:length(minute_pos));
+if par_idx(end) ~= length(minute_pos)
+    par_idx = [par_idx, length(minute_pos)];
+end
+F(length(par_idx) - 1) = parallel.Future;
