@@ -1,17 +1,26 @@
-function [visibleSats, isVisible] = getMaxVizSat(pos, validPoints, f, weather)
-    [d, Pr] = computeMaxDist(pos(3, :, :)/1000, f, weather);
-    maxViewDistance = d; % kilometers
+function [visibleSats, isVisible] = getMaxVizSat(pos, validPoints, f, weather, getPower)
+arguments 
+    pos;
+    validPoints;
+    f;
+    weather;
+    getPower = false; 
+end
 
-    c1 = haversine(pos, validPoints); %% TimePoints x Satellites x GroundPoints - kilometers
-    c2 = mean(pos(3, :, :)./1000 - 0.4, "all"); % kilometers
-    distToCompare = sqrt(c1.^2 + c2.^2);
-    clear c1 c2;
+    [maxViewDistance, ~] = computeMaxDist3GPP(pos(3, :, :)/1000, f); % kilometers
     
+    distToCompare = permute(computeDistance(validPoints, pos),[2 3 1]);
+
     isVisible = distToCompare <= maxViewDistance; %% Return here for handover
-    visibleSats = uint8(sum(isVisible, 2));
-    visibleSats = squeeze(visibleSats);
-    
-    visibleSats_permuted = permute(visibleSats, [2, 1]);
-    visibleSats = visibleSats_permuted;
-    visibleSats = uint16(visibleSats);
+    if getPower
+        distToCompare(~isVisible) = inf;
+        visibleSats = permute(int16(squeeze(max(computeLoss(70, distToCompare, f, weather), [], 2))), [2, 1]);
+    else
+        visibleSats = uint16(sum(isVisible, 2));
+        visibleSats = squeeze(visibleSats);
+
+        visibleSats_permuted = permute(visibleSats, [2, 1]);
+        visibleSats = visibleSats_permuted;
+        visibleSats = uint16(visibleSats);
+    end
 end

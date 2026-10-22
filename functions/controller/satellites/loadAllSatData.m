@@ -1,7 +1,7 @@
-function sats = loadAllSatData(opName, scenario)
+function sats = loadAllSatData(opName)
     opName = lower(opName);
     opName = opName + "_trimmed";
     FILENAME = "%s.tle";
     filepath = pwd + "\data\" + sprintf(FILENAME, opName);
-    sats = satellite(scenario, filepath);
+    sats = tleread(filepath);
 end

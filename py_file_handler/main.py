@@ -42,7 +42,7 @@ def main(opname):
 
     if opname == "starlink":
         visAngle = 10
-        minLat = 43.9372 - visAngle
+        minLat = 0 - visAngle
     else:
         minLat = 0
 
