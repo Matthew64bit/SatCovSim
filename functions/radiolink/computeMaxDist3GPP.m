@@ -1,5 +1,5 @@
 function [slant_range, RSRQ_dB] = computeMaxDist3GPP(h, f)
-    alfa = single(linspace(pi/2 - deg2rad(20), pi/2, 100));
+    alfa = single(linspace(deg2rad(20), pi/2, 100));
     
     slant_range = h./sin(alfa)';
     [~, ~, RSRQ_dB] = computePowerMetrics(f, slant_range);
